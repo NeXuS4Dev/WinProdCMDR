@@ -20,6 +20,7 @@ import { bridge, toolLabel } from '../../bridge';
 import { usePrefs } from '../../prefs';
 import { logActivity } from '../../activity';
 import { OfficeWindow } from '../../chrome/OfficeWindow';
+import { officeMenuStyles } from '../../chrome/motion';
 import type { RibbonTabDef } from '../../chrome/ribbonTypes';
 import { Busy, NoticeStack, StatusDot, useNotices } from '../../components/Bits';
 import { OfficeDialog, DialogButtons } from '../../chrome/OfficeDialog';
@@ -563,6 +564,7 @@ export function ServicesApp() {
         target={ctx ? { left: ctx.x, top: ctx.y } : undefined}
         onDismiss={() => setCtx(null)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </OfficeWindow>
   );

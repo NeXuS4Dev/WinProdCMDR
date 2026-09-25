@@ -11,6 +11,7 @@
 
 import * as React from 'react';
 import { Checkbox, Dialog, DialogType, Icon } from '@fluentui/react';
+import { officeDialogMotion } from './motion';
 import { APP_LIST, SUITE_LONG_NAME, SUITE_NAME, SUITE_VERSION, type AppMeta } from '../../shared/apps';
 import { bridge } from '../bridge';
 import { useActivity, formatActivityTime } from '../activity';
@@ -333,7 +334,7 @@ function BackstageInner(props: { meta: AppMeta; extras: BackstageExtras; onDone:
         onDismiss={() => setOptionsOpen(false)}
         className="ow-dialog"
         dialogContentProps={{ type: DialogType.normal, title: `${SUITE_NAME} Options`, showCloseButton: true }}
-        modalProps={{ isBlocking: false, isDarkOverlay: true }}
+        modalProps={{ isBlocking: false, isDarkOverlay: true, styles: { root: officeDialogMotion.root } }}
       >
         <div className="hint">These settings apply to this computer and are saved automatically.</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9, margin: '0 0 14px' }}>

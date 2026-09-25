@@ -37,7 +37,8 @@ The launcher is a recreation of the **Office 2016 Start screen**: dark brand ban
 - App-colored **title bar** with **Quick Access Toolbar** (save/export, refresh, home + customize menu) and Windows caption buttons (min/maximize/restore/close, red hover)
 - **File tab → Backstage view** (Info page with system facts, App Browser, Exit)
 - Tab strip with centered active tab, **"Tell me" search box** and **Ribbon Display Options** menu
-- Three classic display modes: **Always show / Show tabs / Auto-hide** (hover to open, click content to collapse, double-click a tab to pin)
+- Three classic display modes: **Always show / Show tabs / Auto-hide** — the pinned ribbon expands/collapses by animating its height (content is pushed smoothly, like Office), collapsed ribbons drop over the content and slide back up, and auto-hide also hides the tab strip until the mouse hits the top of the window
+- **Office motion everywhere**: menus use Office's slideDownIn10, dialogs fade/scale in, screentips fade, notices slide down, Start-screen tiles stagger in — all toggleable in Options (and respecting `prefers-reduced-motion`)
 - 96px ribbon: groups with dividers and captions, large buttons, stacked small buttons, split buttons, galleries-style dropdowns, checkboxes, dialog-launcher chevrons
 - **Screentips** (enhanced tooltips) on every control, `F5` refresh, `Esc` to close overlays
 - Inactive windows gray out their chrome; status bar shows live facts, like Excel's

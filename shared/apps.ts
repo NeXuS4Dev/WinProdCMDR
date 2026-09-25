@@ -35,7 +35,7 @@ export interface AppMeta {
 
 export const SUITE_NAME = 'WinProdCMDR';
 export const SUITE_LONG_NAME = 'Windows Production Commander';
-export const SUITE_VERSION = '1.0.1';
+export const SUITE_VERSION = '1.0.2';
 
 export const APPS: Record<AppId, AppMeta> = {
   tasks: {

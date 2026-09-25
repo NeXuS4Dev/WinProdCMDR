@@ -5,6 +5,7 @@
 
 import * as React from 'react';
 import { Dialog, DialogType } from '@fluentui/react';
+import { officeDialogMotion } from './motion';
 
 export function OfficeDialog(props: {
   open: boolean;
@@ -24,9 +25,9 @@ export function OfficeDialog(props: {
         title: props.title,
         showCloseButton: true,
       }}
-      modalProps={{ isBlocking: false, isDarkOverlay: true }}
+      modalProps={{ isBlocking: false, isDarkOverlay: true, styles: { root: officeDialogMotion.root } }}
       styles={{
-        main: props.maxWidth ? { maxWidth: props.maxWidth } : undefined,
+        main: { ...(props.maxWidth ? { maxWidth: props.maxWidth } : {}), ...officeDialogMotion.main },
       }}
     >
       {props.children}

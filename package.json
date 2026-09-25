@@ -2,7 +2,7 @@
   "name": "winprodcmdr",
   "productName": "WinProdCMDR",
   "description": "Windows Production Commander — manage Windows with a classic Office 2016 ribbon suite",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "BSD-3-Clause",
   "author": "Shay",
   "private": true,

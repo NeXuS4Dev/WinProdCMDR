@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { ContextualMenu, Icon } from '@fluentui/react';
 import type { WindowControls } from '../bridge';
+import { officeMenuStyles } from './motion';
 
 export interface QatAction {
   icon: string;
@@ -88,6 +89,7 @@ export function TitleBar(props: {
         target={menuRef}
         onDismiss={() => setMenuOpen(false)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </div>
   );

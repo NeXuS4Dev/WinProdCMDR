@@ -8,6 +8,7 @@ import * as React from 'react';
 import { ContextualMenu, Icon, type IContextualMenuItem } from '@fluentui/react';
 import type { RibbonGroupDef, RibbonItem, RibbonMenuItem, RibbonTabDef } from './ribbonTypes';
 import { useScreentip } from './Screentip';
+import { officeMenuStyles } from './motion';
 
 /* ------------------------------------------------------------------ */
 /* Menu mapping                                                        */
@@ -109,6 +110,7 @@ function LargeSplitButton(props: {
         target={btnRef}
         onDismiss={() => setOpen(false)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </>
   );
@@ -203,6 +205,7 @@ function SmallRow(props: { item: RibbonItem }) {
         target={ref}
         onDismiss={() => setMenuOpen(false)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </>
   );
@@ -262,6 +265,7 @@ function SelectRow(props: { item: Extract<RibbonItem, { kind: 'select' }> }) {
         target={ref}
         onDismiss={() => setOpen(false)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </>
   );
@@ -318,11 +322,19 @@ function Group(props: { group: RibbonGroupDef }) {
 /* Ribbon body                                                         */
 /* ------------------------------------------------------------------ */
 
-export function RibbonBody(props: { tab: RibbonTabDef; overlay?: boolean; closing?: boolean }) {
+export function RibbonBody(props: {
+  tab: RibbonTabDef;
+  overlay?: boolean;
+  closing?: boolean;
+  onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
+  onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
+}) {
   return (
     <div
       className={`ow-ribbon${props.overlay ? ' overlay' : ''}${props.closing ? ' closing' : ''}`}
       onMouseDown={(e) => e.stopPropagation()}
+      onMouseEnter={props.onMouseEnter}
+      onMouseLeave={props.onMouseLeave}
     >
       {props.tab.groups.map((g) => (
         <Group key={g.key} group={g} />

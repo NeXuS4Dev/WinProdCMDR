@@ -8,11 +8,18 @@
  *   [ Content         ]  the app's working area
  *   [ Status bar      ]  app color strip
  *
- * Classic behaviors:
- *   - Ribbon Display Options: Always show / Show tabs / Auto-hide
- *   - click active tab toggles ribbon, double-click pins, hover opens when collapsed
- *   - File opens the Backstage view (slides in like Office 2016)
- *   - F5 refreshes, Esc closes overlays, double-click title maximizes
+ * Office 2016 motion model (all killable via Options → animations):
+ *   - Pinned ribbon expands/collapses by ANIMATING ITS HEIGHT (96px ⇄ 0),
+ *     so the content below is pushed/pulled smoothly, exactly like Office.
+ *   - Collapsed ("Show Tabs") or auto-hide: the ribbon drops over the
+ *     content as an overlay and slides back up when dismissed.
+ *   - Auto-hide also hides the tab strip; moving the mouse to the top of
+ *     the window reveals tabs + ribbon; leaving (or clicking content)
+ *     hides them again.
+ *   - Menus use Office's slideDownIn10 motion, screentips fade in.
+ *
+ * Classic behaviors kept: click active tab toggles, double-click pins,
+ * Esc closes overlays, F5 refreshes, double-click title maximizes.
  */
 
 import * as React from 'react';
@@ -26,6 +33,7 @@ import { RibbonBody } from './Ribbon';
 import { TitleBar, type QatAction } from './TitleBar';
 import { Backstage, type BackstageExtras } from './Backstage';
 import { StatusBar } from './StatusBar';
+import { officeMenuStyles } from './motion';
 
 export type RibbonMode = 'expanded' | 'collapsed' | 'autohide';
 
@@ -51,6 +59,8 @@ export interface OfficeWindowProps {
 }
 
 type BackstageState = 'closed' | 'open' | 'closing';
+type WrapState = 'in' | 'opening' | 'closing';
+type OverlayState = 'closed' | 'open' | 'closing';
 
 export function OfficeWindow(props: OfficeWindowProps) {
   const { meta } = props;
@@ -58,13 +68,32 @@ export function OfficeWindow(props: OfficeWindowProps) {
   const [activeTab, setActiveTab] = React.useState(() => props.tabs[0]?.key ?? '');
   const [backstage, setBackstage] = React.useState<BackstageState>('closed');
   const [mode, setMode] = React.useState<RibbonMode>(props.ribbonMode ?? 'expanded');
-  const [ribbonClosing, setRibbonClosing] = React.useState(false);
-  const [overlay, setOverlay] = React.useState(false);
+  const [wrapState, setWrapState] = React.useState<WrapState>('in');
+  const [overlay, setOverlay] = React.useState<OverlayState>('closed');
+  const [revealed, setRevealed] = React.useState(false);
   const [dispMenuOpen, setDispMenuOpen] = React.useState(false);
   const [dispTarget, setDispTarget] = React.useState<HTMLElement | null>(null);
   const [windowActive, setWindowActive] = React.useState(true);
   const [maximized, setMaximized] = React.useState(false);
-  const closeTimer = React.useRef<number | undefined>(undefined);
+
+  const bsTimer = React.useRef<number | undefined>(undefined);
+  const transTimer = React.useRef<number | undefined>(undefined);
+  const hideTimer = React.useRef<number | undefined>(undefined);
+
+  /* Mirrors for use inside timers/callbacks without staleness. */
+  const modeRef = React.useRef(mode);
+  modeRef.current = mode;
+  const overlayRef = React.useRef(overlay);
+  overlayRef.current = overlay;
+
+  React.useEffect(
+    () => () => {
+      window.clearTimeout(bsTimer.current);
+      window.clearTimeout(transTimer.current);
+      window.clearTimeout(hideTimer.current);
+    },
+    [],
+  );
 
   /* Window controls (Electron only) ------------------------------------ */
   React.useEffect(() => {
@@ -84,32 +113,110 @@ export function OfficeWindow(props: OfficeWindowProps) {
     };
   }, []);
 
-  React.useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+  /* ------------------------- ribbon state machine --------------------- */
 
-  /* Ribbon mode transitions (with Office-style slide) ------------------- */
   const commitMode = (m: RibbonMode) => {
     setMode(m);
     props.onRibbonModeChange?.(m);
-    if (m === 'expanded') setOverlay(false);
   };
 
+  /** Mount the pinned ribbon and animate its height 0 → 96px. */
+  const openPinned = () => {
+    commitMode('expanded');
+    setWrapState('opening');
+    window.clearTimeout(transTimer.current);
+    transTimer.current = window.setTimeout(() => setWrapState('in'), 170);
+  };
+
+  /** Animate the pinned ribbon's height 96px → 0, then unmount. */
+  const closePinnedTo = (to: RibbonMode) => {
+    setWrapState('closing');
+    window.clearTimeout(transTimer.current);
+    transTimer.current = window.setTimeout(() => {
+      setWrapState('in');
+      commitMode(to);
+    }, 140);
+  };
+
+  /** Drop the ribbon over the content (collapsed click or auto-hide reveal). */
+  const openOverlay = () => {
+    window.clearTimeout(hideTimer.current);
+    window.clearTimeout(transTimer.current);
+    setRevealed(true);
+    setOverlay('open');
+  };
+
+  /** Slide the overlay ribbon back up. */
+  const closeOverlay = () => {
+    window.clearTimeout(hideTimer.current);
+    if (overlayRef.current !== 'open') {
+      setRevealed(false);
+      return;
+    }
+    setOverlay('closing');
+    window.clearTimeout(transTimer.current);
+    transTimer.current = window.setTimeout(() => {
+      setOverlay('closed');
+      setRevealed(false);
+    }, 130);
+  };
+
+  /** Auto-hide: hide again shortly after the mouse leaves tabs/ribbon. */
+  const scheduleAutohide = () => {
+    if (modeRef.current !== 'autohide') return;
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      if (overlayRef.current === 'open') {
+        setOverlay('closing');
+        window.clearTimeout(transTimer.current);
+        transTimer.current = window.setTimeout(() => {
+          setOverlay('closed');
+          setRevealed(false);
+        }, 130);
+      } else {
+        setRevealed(false);
+      }
+    }, 260);
+  };
+  const cancelAutohide = () => window.clearTimeout(hideTimer.current);
+
   const setRibbonMode = (m: RibbonMode) => {
-    if (m === mode) {
-      if (m !== 'expanded') setOverlay(false);
+    window.clearTimeout(hideTimer.current);
+    window.clearTimeout(transTimer.current);
+    const cur = modeRef.current;
+    if (m === cur) {
+      closeOverlay();
       return;
     }
-    if (mode === 'expanded' && m !== 'expanded') {
-      // animate the ribbon away, then collapse to tabs-only
-      if (ribbonClosing) return;
-      setOverlay(false);
-      setRibbonClosing(true);
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = window.setTimeout(() => {
-        setRibbonClosing(false);
-        commitMode(m);
-      }, 130);
+    if (cur === 'expanded' && m !== 'expanded') {
+      if (overlayRef.current !== 'closed') {
+        setOverlay('closing');
+        transTimer.current = window.setTimeout(() => {
+          setOverlay('closed');
+          setRevealed(false);
+          commitMode(m);
+        }, 130);
+      } else {
+        closePinnedTo(m);
+      }
       return;
     }
+    if (m === 'expanded' && cur !== 'expanded') {
+      if (overlayRef.current !== 'closed') {
+        setOverlay('closing');
+        transTimer.current = window.setTimeout(() => {
+          setOverlay('closed');
+          setRevealed(false);
+          openPinned();
+        }, 130);
+      } else {
+        openPinned();
+      }
+      return;
+    }
+    // hidden ⇄ hidden (collapsed ⇄ autohide)
+    setOverlay('closed');
+    setRevealed(false);
     commitMode(m);
   };
 
@@ -117,6 +224,11 @@ export function OfficeWindow(props: OfficeWindowProps) {
 
   const onTabClick = (key: string) => {
     if (key === 'file') {
+      window.clearTimeout(hideTimer.current);
+      window.clearTimeout(transTimer.current);
+      setOverlay('closed');
+      setRevealed(false);
+      setWrapState((w) => (w === 'closing' ? 'in' : w));
       setBackstage((b) => (b === 'closed' ? 'open' : 'closed'));
       return;
     }
@@ -127,29 +239,36 @@ export function OfficeWindow(props: OfficeWindowProps) {
     }
     if (key === activeTab) {
       // Clicking the active tab toggles the ribbon (classic behavior).
-      if (overlay) {
-        setOverlay(false);
-      } else if (mode === 'expanded') {
+      if (overlayRef.current !== 'closed') {
+        closeOverlay();
+      } else if (modeRef.current === 'expanded') {
         setRibbonMode('collapsed');
+      } else if (modeRef.current === 'collapsed') {
+        openOverlay();
+      } else if (revealed) {
+        closeOverlay();
       } else {
-        setRibbonMode('expanded');
+        openOverlay();
       }
       return;
     }
     setActiveTab(key);
-    if (mode !== 'expanded' && !ribbonClosing) setOverlay(true);
+    // Collapsed/auto-hide: choosing a different tab drops the ribbon for it.
+    if (modeRef.current !== 'expanded' && overlayRef.current === 'closed') {
+      openOverlay();
+    }
   };
 
   const onTabDoubleClick = (key: string) => {
     if (key === 'file') return;
-    setRibbonMode(mode === 'expanded' ? 'collapsed' : 'expanded');
+    setRibbonMode(modeRef.current === 'expanded' ? 'collapsed' : 'expanded');
   };
 
   /* Backstage close with slide-out -------------------------------------- */
   const closeBackstage = React.useCallback(() => {
     setBackstage((b) => (b === 'open' ? 'closing' : b));
-    window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setBackstage('closed'), 150);
+    window.clearTimeout(bsTimer.current);
+    bsTimer.current = window.setTimeout(() => setBackstage('closed'), 150);
   }, []);
 
   /* Gray out chrome when the window loses focus (inactive Office window) */
@@ -158,7 +277,8 @@ export function OfficeWindow(props: OfficeWindowProps) {
     return blend(meta.palette.primary, '#8f8f8f');
   }, [meta.palette.primary, windowActive]);
 
-  const ribbonVisible = !ribbonClosing && (mode === 'expanded' || overlay);
+  const autohide = mode === 'autohide';
+  const showBackstage = backstage !== 'closed';
 
   /* QAT ----------------------------------------------------------------- */
   const qatItems: QatAction[] = [];
@@ -198,7 +318,7 @@ export function OfficeWindow(props: OfficeWindowProps) {
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (overlay) setOverlay(false);
+        if (overlayRef.current !== 'closed') closeOverlay();
         else if (backstage === 'open') closeBackstage();
       } else if (e.key === 'F5') {
         e.preventDefault();
@@ -207,13 +327,11 @@ export function OfficeWindow(props: OfficeWindowProps) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [overlay, backstage, closeBackstage, props]);
-
-  const showBackstage = backstage !== 'closed';
+  }, [backstage, closeBackstage, props]);
 
   return (
     <div
-      className={`ow${prefs.animations ? '' : ' no-anim'}`}
+      className={`ow${prefs.animations ? '' : ' no-anim'}${autohide ? ' mode-autohide' : ''}`}
       style={
         {
           '--ow-primary': chromeColor,
@@ -230,7 +348,11 @@ export function OfficeWindow(props: OfficeWindowProps) {
         qat={{ items: qatItems, menu: qatMenu }}
       />
 
-      <div className="ow-tabs">
+      <div
+        className={`ow-tabs${revealed || !autohide ? ' revealed' : ''}`}
+        onMouseEnter={cancelAutohide}
+        onMouseLeave={autohide && overlay === 'open' ? scheduleAutohide : undefined}
+      >
         <button
           className={`ow-tab${showBackstage ? ' active' : ''}`}
           onClick={() => onTabClick('file')}
@@ -285,20 +407,33 @@ export function OfficeWindow(props: OfficeWindowProps) {
           />
         ) : (
           <>
-            {mode !== 'expanded' && !overlay && !ribbonClosing ? (
-              <div
-                className="ohotzone"
-                onMouseEnter={() => setOverlay(true)}
-                title="Show the ribbon"
+            {/* Pinned ribbon: wrapper animates its height (96px ⇄ 0). */}
+            {mode === 'expanded' && currentTab ? (
+              <div className={`ow-ribbonwrap${wrapState !== 'in' ? ` ${wrapState}` : ''}`}>
+                <RibbonBody tab={currentTab} closing={wrapState === 'closing'} />
+              </div>
+            ) : null}
+
+            {/* Overlay ribbon (collapsed click / auto-hide hover reveal). */}
+            {overlay !== 'closed' && currentTab ? (
+              <RibbonBody
+                tab={currentTab}
+                overlay
+                closing={overlay === 'closing'}
+                onMouseEnter={cancelAutohide}
+                onMouseLeave={autohide && overlay === 'open' ? scheduleAutohide : undefined}
               />
             ) : null}
-            {ribbonVisible && currentTab ? (
-              <RibbonBody tab={currentTab} overlay={overlay} closing={ribbonClosing} />
+
+            {/* Auto-hide: reveal strip at the very top of the body. */}
+            {autohide && !revealed ? (
+              <div className="ohotzone" onMouseEnter={openOverlay} title="Show the ribbon" />
             ) : null}
+
             <div
               className="ow-content"
               onMouseDown={() => {
-                if (overlay) setOverlay(false);
+                if (overlay !== 'closed') closeOverlay();
               }}
             >
               {props.children}
@@ -320,6 +455,7 @@ export function OfficeWindow(props: OfficeWindowProps) {
         target={dispTarget}
         onDismiss={() => setDispMenuOpen(false)}
         shouldFocusOnMount
+        styles={officeMenuStyles}
       />
     </div>
   );

@@ -140,21 +140,68 @@ describe('Backstage view (Office 2016)', () => {
   }, 15000);
 });
 
-describe('Ribbon animations', () => {
-  it('ribbon body carries the drop-in animation classes', async () => {
+describe('Ribbon animations (Office 2016 motion)', () => {
+  it('collapses by animating the wrapper height, re-expands pinned', async () => {
     window.history.pushState({}, '', '/?app=tasks');
     render(<TasksApp />);
     await waitFor(() => present('Run new task'));
-    const ribbon = document.querySelector('.ow-ribbon')!;
-    expect(ribbon.className).toContain('ow-ribbon');
-    // closing state animates out then collapses
+
+    // pinned ribbon mounted inside the height-animated wrapper
+    const wrap = () => document.querySelector('.ow-ribbonwrap');
+    expect(wrap()).not.toBeNull();
+
+    // click active tab -> height 96 -> 0 animation, then unmount
     const tab = document.querySelector('.ow-tabs button.ow-tab.active') as HTMLButtonElement;
     expect(tab?.textContent).toBe('Home');
-    fireEvent.click(tab); // toggle active tab -> collapse
+    fireEvent.click(tab);
+    await waitFor(() => expect(document.querySelector('.ow-ribbonwrap.closing')).not.toBeNull());
+    await waitFor(() => expect(wrap()).toBeNull(), { timeout: 3000 });
+
+    // double-click a tab pins the ribbon again -> height 0 -> 96 animation
+    const homeTab = Array.from(document.querySelectorAll('.ow-tabs button.ow-tab')).find(
+      (b) => b.textContent === 'Home',
+    ) as HTMLButtonElement;
+    fireEvent.doubleClick(homeTab);
+    await waitFor(() => expect(document.querySelector('.ow-ribbonwrap.opening')).not.toBeNull());
     await waitFor(() => {
-      const closing = document.querySelector('.ow-ribbon.closing');
-      // either animating out or already collapsed (tabs-only mode)
-      expect(closing ?? document.querySelector('.ow-ribbon')).toBeNull();
+      const w = wrap();
+      expect(w).not.toBeNull();
+      expect(w!.className).not.toContain('opening');
+      expect(w!.className).not.toContain('closing');
+    });
+  }, 15000);
+
+  it('auto-hide mode hides the tab strip and reveals it from the top hotzone', async () => {
+    window.history.pushState({}, '', '/?app=tasks');
+    render(<TasksApp />);
+    await waitFor(() => present('Run new task'));
+
+    // Ribbon Display Options -> Auto-hide
+    // (the QAT customize menu stays mounted but hidden, so pick the item
+    // from the menu that was just opened — the last one in the DOM)
+    fireEvent.click(document.querySelector('.rbdisp') as HTMLButtonElement);
+    const items = await waitFor(() => screen.getAllByText('Auto-hide the Ribbon'));
+    fireEvent.click(items[items.length - 1]);
+    await waitFor(() =>
+      expect(document.querySelector('.ow')!.className).toContain('mode-autohide'),
+    );
+
+    // tab strip collapsed, hotzone present
+    expect(document.querySelector('.ow-tabs')!.className).not.toContain('revealed');
+    const hotzone = document.querySelector('.ohotzone');
+    expect(hotzone).not.toBeNull();
+
+    // moving the mouse to the top reveals tabs + drops the overlay ribbon
+    fireEvent.mouseEnter(hotzone!);
+    await waitFor(() =>
+      expect(document.querySelector('.ow-tabs')!.className).toContain('revealed'),
+    );
+    await waitFor(() => expect(document.querySelector('.ow-ribbon.overlay')).not.toBeNull());
+
+    // clicking in the content hides it again
+    fireEvent.mouseDown(document.querySelector('.ow-content')!);
+    await waitFor(() => expect(document.querySelector('.ow-ribbon.overlay')).toBeNull(), {
+      timeout: 3000,
     });
   }, 15000);
 });
