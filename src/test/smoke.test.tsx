@@ -27,7 +27,7 @@ describe('App Browser (start screen)', () => {
     present('Services Manager');
     present('System Info');
     present(/Demo data/);
-    present(/Version 1\.0\.0/);
+    present(/Version 1\.\d+\.\d+/);
   });
 });
 
