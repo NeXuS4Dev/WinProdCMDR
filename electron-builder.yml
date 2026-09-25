@@ -25,3 +25,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   shortcutName: WinProdCMDR
+
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}
