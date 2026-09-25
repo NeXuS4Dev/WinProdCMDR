@@ -68,6 +68,7 @@ Some operations (ending processes, controlling services, `Set-Service`) need ele
 npm install
 npm run dev        # Vite (renderer HMR) + esbuild watch + Electron
 npm run web        # browser preview only (demo data) — great for a quick look
+npm test           # render smoke tests (vitest + jsdom + Testing Library)
 npm run typecheck  # strict TS over renderer + main
 npm run build      # production renderer + main bundles
 npm run dist       # Windows installer (NSIS) via electron-builder
