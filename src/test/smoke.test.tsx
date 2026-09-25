@@ -3,7 +3,6 @@
  * using the browser (demo data) transport.
  */
 
-import * as React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
