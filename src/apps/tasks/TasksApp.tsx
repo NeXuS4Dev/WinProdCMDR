@@ -19,6 +19,8 @@ import {
 import { APPS } from '../../../shared/apps';
 import type { ProcessInfo } from '../../../shared/types';
 import { bridge } from '../../bridge';
+import { usePrefs } from '../../prefs';
+import { logActivity } from '../../activity';
 import { OfficeWindow } from '../../chrome/OfficeWindow';
 import type { RibbonTabDef } from '../../chrome/ribbonTypes';
 import { Busy, LineChart, NoticeStack, useNotices, Bar, fmtUptime } from '../../components/Bits';
@@ -59,6 +61,7 @@ export function TasksApp() {
   const [colsOpen, setColsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const { notices, push, dismiss } = useNotices();
+  const prefs = usePrefs();
 
   /* ------------------------------ data ------------------------------ */
 
@@ -155,30 +158,36 @@ export function TasksApp() {
   /* ---------------------------- actions ----------------------------- */
 
   const endTask = React.useCallback(async () => {
-    if (!selected.length) return;
+    if (!selected.length || prefs.readOnly) return;
     const targets = [...selected];
+    const ended: string[] = [];
     for (const p of targets) {
       const res = await bridge.endTask(p.pid);
       if (!res.ok) push('error', `Could not end "${p.name}" (PID ${p.pid}): ${res.error}`);
+      else ended.push(`${p.name} (${p.pid})`);
     }
-    if (targets.length) push('success', `Ended ${targets.length} process${targets.length > 1 ? 'es' : ''}.`, 3200);
+    if (ended.length) {
+      push('success', `Ended ${ended.length} process${ended.length > 1 ? 'es' : ''}.`, 3200);
+      logActivity(`Ended ${ended.join(', ')}`);
+    }
     selection.setAllSelected(false);
     await refresh();
-  }, [selected, selection, refresh, push]);
+  }, [selected, selection, refresh, push, prefs.readOnly]);
 
   const runTask = React.useCallback(async () => {
     const f = runValue.trim();
-    if (!f) return;
+    if (!f || prefs.readOnly) return;
     const res = await bridge.runTask(f);
     if (!res.ok) {
       push('error', `Could not run "${f}": ${res.error}`);
       return;
     }
     push('success', `Started "${f}".`, 3200);
+    logActivity(`Started task "${f}"`);
     setRunOpen(false);
     setRunValue('');
     await refresh();
-  }, [runValue, refresh, push]);
+  }, [runValue, refresh, push, prefs.readOnly]);
 
   const exportCsv = React.useCallback(async () => {
     const header = 'Name,PID,Status,CPU %,Memory MB,Description,Company\n';
@@ -190,8 +199,10 @@ export function TasksApp() {
       )
       .join('\n');
     const res = await bridge.exportReport(`Processes-${new Date().toISOString().slice(0, 10)}.csv`, header + lines);
-    if (res.ok && res.data?.path) push('success', `List exported to ${res.data.path}`, 5000);
-    else if (!res.ok) push('error', `Export failed: ${res.error}`);
+    if (res.ok && res.data?.path) {
+      push('success', `List exported to ${res.data.path}`, 5000);
+      logActivity(`Exported process list (${filtered.length} rows)`);
+    } else if (!res.ok) push('error', `Export failed: ${res.error}`);
   }, [filtered, push]);
 
   /* ---------------------------- columns ----------------------------- */
@@ -308,7 +319,7 @@ export function TasksApp() {
                 icon: 'Cancel',
                 iconColor: '#c42b1c',
                 label: 'End task',
-                disabled: selected.length === 0,
+                disabled: selected.length === 0 || prefs.readOnly,
                 onClick: () => void endTask(),
                 tip: {
                   title: 'End task',
@@ -330,6 +341,7 @@ export function TasksApp() {
                 key: 'run',
                 icon: 'Add',
                 label: 'Run new task',
+                disabled: prefs.readOnly,
                 onClick: () => setRunOpen(true),
                 tip: {
                   title: 'Run new task',
@@ -355,7 +367,7 @@ export function TasksApp() {
                   icon: 'Cancel',
                   iconColor: '#c42b1c',
                   label: 'End selected',
-                  disabled: selected.length === 0,
+                  disabled: selected.length === 0 || prefs.readOnly,
                   onClick: () => void endTask(),
                 },
               ],
@@ -478,6 +490,12 @@ export function TasksApp() {
           <SbItem style={{ color: '#ffd7d3' }}>Not responding: {notResponding}</SbItem>
         </>
       ) : null}
+      {prefs.readOnly ? (
+        <>
+          <SbSep />
+          <SbItem style={{ color: '#ffe9b3' }}>Read-only</SbItem>
+        </>
+      ) : null}
     </>
   );
 
@@ -500,6 +518,27 @@ export function TasksApp() {
       qat={{
         save: { onClick: () => void exportCsv(), tip: 'Export — save the current process list as CSV' },
         refresh: { onClick: () => void refresh(), tip: 'Refresh the process list' },
+      }}
+      onRefresh={() => void refresh()}
+      backstageExtras={{
+        refresh: () => void refresh(),
+        properties: [
+          { k: 'Processes', v: rows.length },
+          { k: 'CPU total', v: `${cpuNow.toFixed(0)}%` },
+          { k: 'Memory in use', v: `${memNowGB.toFixed(2)} GB` },
+          { k: 'Not responding', v: notResponding },
+          { k: 'View', v: view === 'perf' ? 'Performance' : 'Details' },
+          { k: 'Mode', v: prefs.readOnly ? 'Read-only' : 'Full access' },
+        ],
+        exportItems: [
+          {
+            key: 'csv',
+            label: 'Export process list (CSV)',
+            desc: 'Saves the visible rows with name, PID, status, CPU and memory.',
+            icon: 'ReportDocument',
+            onClick: () => void exportCsv(),
+          },
+        ],
       }}
       statusLeft={statusLeft}
       statusRight={statusRight}

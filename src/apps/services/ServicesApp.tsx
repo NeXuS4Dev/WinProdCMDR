@@ -17,6 +17,8 @@ import {
 import { APPS } from '../../../shared/apps';
 import type { ServiceInfo, ServiceStartupType } from '../../../shared/types';
 import { bridge, toolLabel } from '../../bridge';
+import { usePrefs } from '../../prefs';
+import { logActivity } from '../../activity';
 import { OfficeWindow } from '../../chrome/OfficeWindow';
 import type { RibbonTabDef } from '../../chrome/ribbonTypes';
 import { Busy, NoticeStack, StatusDot, useNotices } from '../../components/Bits';
@@ -38,6 +40,7 @@ export function ServicesApp() {
   const [colsOpen, setColsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const { notices, push, dismiss } = useNotices();
+  const prefs = usePrefs();
 
   const refresh = React.useCallback(async () => {
     const res = await bridge.listServices();
@@ -108,27 +111,31 @@ export function ServicesApp() {
   const control = React.useCallback(
     async (action: 'start' | 'stop' | 'restart', targets?: ServiceInfo[]) => {
       const list = targets ?? selected;
-      if (!list.length) return;
+      if (!list.length || prefs.readOnly) return;
       withBusy(list.map((s) => s.name));
       let failed = 0;
+      const done: string[] = [];
       for (const s of list) {
         const res = await bridge.serviceControl(s.name, action);
         if (!res.ok) {
           failed++;
           push('error', `${s.displayName || s.name}: ${res.error}`);
-        }
+        } else done.push(s.displayName || s.name);
       }
-      if (!failed) push('success', `${action[0].toUpperCase()}${action.slice(1)}ed ${list.length} service${list.length > 1 ? 's' : ''}.`, 3000);
+      if (!failed) {
+        push('success', `${action[0].toUpperCase()}${action.slice(1)}ed ${list.length} service${list.length > 1 ? 's' : ''}.`, 3000);
+        logActivity(`${action[0].toUpperCase()}${action.slice(1)}ed ${done.join(', ')}`);
+      }
       await refresh();
       setBusyNames(new Set());
     },
-    [selected, refresh, push],
+    [selected, refresh, push, prefs.readOnly],
   );
 
   const applyStartup = React.useCallback(
     async (type: ServiceStartupType, targets?: ServiceInfo[]) => {
       const list = targets ?? selected;
-      if (!list.length) return;
+      if (!list.length || prefs.readOnly) return;
       withBusy(list.map((s) => s.name));
       let failed = 0;
       for (const s of list) {
@@ -138,11 +145,14 @@ export function ServicesApp() {
           push('error', `${s.displayName || s.name}: ${res.error}`);
         }
       }
-      if (!failed) push('success', `Startup type set to "${type}" for ${list.length} service${list.length > 1 ? 's' : ''}.`, 3600);
+      if (!failed) {
+        push('success', `Startup type set to "${type}" for ${list.length} service${list.length > 1 ? 's' : ''}.`, 3600);
+        logActivity(`Set startup type "${type}": ${list.map((s) => s.displayName || s.name).join(', ')}`);
+      }
       await refresh();
       setBusyNames(new Set());
     },
-    [selected, refresh, push],
+    [selected, refresh, push, prefs.readOnly],
   );
 
   const openTool = React.useCallback(
@@ -164,8 +174,10 @@ export function ServicesApp() {
       )
       .join('\n');
     const res = await bridge.exportReport(`Services-${new Date().toISOString().slice(0, 10)}.csv`, header + lines);
-    if (res.ok && res.data?.path) push('success', `List exported to ${res.data.path}`, 5000);
-    else if (!res.ok) push('error', `Export failed: ${res.error}`);
+    if (res.ok && res.data?.path) {
+      push('success', `List exported to ${res.data.path}`, 5000);
+      logActivity(`Exported service list (${filtered.length} rows)`);
+    } else if (!res.ok) push('error', `Export failed: ${res.error}`);
   }, [filtered, push]);
 
   /* ---------------------------- columns ----------------------------- */
@@ -270,7 +282,7 @@ export function ServicesApp() {
                 icon: 'Play',
                 iconColor: '#107c10',
                 label: 'Start',
-                disabled: !canStart,
+                disabled: !canStart || prefs.readOnly,
                 onClick: () => void control('start'),
                 tip: { title: 'Start', body: 'Starts the selected service(s). Disabled services must be re-enabled first.' },
               },
@@ -284,7 +296,7 @@ export function ServicesApp() {
                 icon: 'Stop',
                 iconColor: '#c50f1f',
                 label: 'Stop',
-                disabled: !canStop,
+                disabled: !canStop || prefs.readOnly,
                 onClick: () => void control('stop'),
                 tip: { title: 'Stop', body: 'Stops the selected service(s). Dependent services are stopped as well.' },
               },
@@ -298,7 +310,7 @@ export function ServicesApp() {
                 icon: 'Sync',
                 iconColor: '#0f6cbd',
                 label: 'Restart',
-                disabled: !canRestart,
+                disabled: !canRestart || prefs.readOnly,
                 onClick: () => void control('restart'),
                 tip: { title: 'Restart', body: 'Stops and immediately starts the selected running service(s).' },
               },
@@ -318,7 +330,7 @@ export function ServicesApp() {
                   key: 'setstart',
                   icon: 'Settings',
                   label: 'Set startup type',
-                  disabled: sel.length === 0,
+                  disabled: sel.length === 0 || prefs.readOnly,
                   onDefaultClick: () => void applyStartup('Automatic'),
                   menu: STARTUP_TYPES.map((t) => ({
                     key: String(t),
@@ -457,6 +469,12 @@ export function ServicesApp() {
           <SbItem>{selSummary}</SbItem>
         </>
       ) : null}
+      {prefs.readOnly ? (
+        <>
+          <SbSep />
+          <SbItem style={{ color: '#ffe9b3' }}>Read-only</SbItem>
+        </>
+      ) : null}
     </>
   );
 
@@ -468,6 +486,26 @@ export function ServicesApp() {
       qat={{
         save: { onClick: () => void exportCsv(), tip: 'Export — save the current service list as CSV' },
         refresh: { onClick: () => void refresh(), tip: 'Refresh the service list' },
+      }}
+      onRefresh={() => void refresh()}
+      backstageExtras={{
+        refresh: () => void refresh(),
+        properties: [
+          { k: 'Services', v: rows.length },
+          { k: 'Running', v: runningCount },
+          { k: 'Stopped', v: rows.filter((s) => s.status === 'Stopped').length },
+          { k: 'Shown (after filter)', v: filtered.length },
+          { k: 'Mode', v: prefs.readOnly ? 'Read-only' : 'Full access' },
+        ],
+        exportItems: [
+          {
+            key: 'csv',
+            label: 'Export service list (CSV)',
+            desc: 'Saves names, statuses, startup types, accounts and descriptions.',
+            icon: 'ReportDocument',
+            onClick: () => void exportCsv(),
+          },
+        ],
       }}
       statusLeft={statusLeft}
       statusRight={<SbButton icon="Refresh" onClick={() => void refresh()} title="Refresh (F5)" />}

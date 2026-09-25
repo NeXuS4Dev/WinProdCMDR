@@ -13,7 +13,7 @@ import { registerIcons } from '@fluentui/react';
 import {
   AcceptIcon, AddIcon, AreaChartIcon, ArchiveIcon, BarChart4Icon, CancelIcon, ChartIcon,
   CheckMarkIcon, ChevronDownIcon, ChevronDownSmallIcon, ChevronLeftIcon, ChevronRightIcon,
-  ChevronUpIcon, ChromeCloseIcon, ChromeFullScreenIcon, ChromeMinimizeIcon,
+  ChevronUpIcon, ChromeCloseIcon, ChromeFullScreenIcon, ChromeMinimizeIcon, ChromeRestoreIcon,
   CircleRingIcon, ClearIcon, CodeIcon, ColorSolidIcon, CompletedIcon, CopyIcon, DeleteIcon,
   DeveloperToolsIcon, Devices4Icon, Devices3Icon, DiagnosticIcon, DonutChartIcon, DownloadIcon,
   ErrorBadgeIcon, ErrorIcon, FilterIcon, FolderOpenIcon, GlobeIcon, HardDriveIcon, HealthIcon,
@@ -26,19 +26,14 @@ import {
   TilesIcon, UndoIcon, UserGaugeIcon, ViewIcon, PinnedIcon,
 } from '@fluentui/react-icons-mdl2';
 
-/* Window chrome glyphs (MDL2 E921–E8BB), re-drawn on a 10×10 grid. */
+/* Window chrome glyphs on the authentic MDL2 2048 grid.
+   ChromeClose / ChromeMinimize / ChromeRestore ship with the package (real
+   Segoe MDL2 path data, 205-unit strokes). ChromeMaximize (E922) is missing
+   from the SVG set, so it is re-drawn here on the same grid with the same
+   stroke weight: a 1638×1638 square outline centered in the 2048 box. */
 const ChromeMaximizeGlyph: React.FunctionComponent = () => (
-  <svg width="1em" height="1em" viewBox="0 0 10 10" aria-hidden="true">
-    <path d="M0.5 0.5h9v9h-9zM1.5 1.5v7h7v-7z" fill="currentColor" fillRule="evenodd" />
-  </svg>
-);
-const ChromeRestoreGlyph: React.FunctionComponent = () => (
-  <svg width="1em" height="1em" viewBox="0 0 10 10" aria-hidden="true">
-    <path
-      d="M2.5 0.5h7v7h-2v2h-7v-7h2v-2zM3.5 3.5v-1h-2v5h5v-2h-3v-2zM4.5 1.5v2h3v3h1v-5h-4z"
-      fill="currentColor"
-      fillRule="evenodd"
-    />
+  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 2048 2048" style={{ display: "block" }} focusable="false" aria-hidden="true">
+    <path d="M1843 205v1638H205V205h1638zM1638 410H410v1228h1228V410z" fill="currentColor" fillRule="evenodd" />
   </svg>
 );
 
@@ -48,7 +43,7 @@ const SVGS: Record<string, React.FunctionComponent> = {
   ChevronDown: ChevronDownIcon, ChevronDownSmall: ChevronDownSmallIcon, ChevronLeft: ChevronLeftIcon,
   ChevronRight: ChevronRightIcon, ChevronUp: ChevronUpIcon, ChromeClose: ChromeCloseIcon,
   ChromeFullScreen: ChromeFullScreenIcon, ChromeMinimize: ChromeMinimizeIcon,
-  ChromeMaximize: ChromeMaximizeGlyph, ChromeRestore: ChromeRestoreGlyph, CircleRing: CircleRingIcon,
+  ChromeMaximize: ChromeMaximizeGlyph, ChromeRestore: ChromeRestoreIcon, CircleRing: CircleRingIcon,
   Clear: ClearIcon, Code: CodeIcon, ColorSolid: ColorSolidIcon, Completed: CompletedIcon,
   Copy: CopyIcon, Delete: DeleteIcon, DeveloperTools: DeveloperToolsIcon, Devices4: Devices4Icon,
   Devices3: Devices3Icon, Diagnostic: DiagnosticIcon, DonutChart: DonutChartIcon, Download: DownloadIcon,

@@ -20,6 +20,8 @@ export function TitleBar(props: {
   /** null → non-Electron (browser preview): chrome buttons are hidden. */
   controls: WindowControls | null;
   maximized: boolean;
+  /** Double-clicking the title bar toggles maximize (Windows behavior). */
+  onDoubleClick?: () => void;
   qat: { items: QatAction[]; menu: { key: string; text: string; icon?: string; onClick: () => void; checked?: boolean; dividerBefore?: boolean }[] };
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -28,7 +30,7 @@ export function TitleBar(props: {
   const w = props.controls;
 
   return (
-    <div className="ow-tb drag">
+    <div className="ow-tb drag" onDoubleClick={props.onDoubleClick}>
       <div className="ow-qat">
         {props.qat.items.map((a, i) => (
           <React.Fragment key={`${a.icon}-${i}`}>

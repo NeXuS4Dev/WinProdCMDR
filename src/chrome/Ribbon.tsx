@@ -318,10 +318,10 @@ function Group(props: { group: RibbonGroupDef }) {
 /* Ribbon body                                                         */
 /* ------------------------------------------------------------------ */
 
-export function RibbonBody(props: { tab: RibbonTabDef; overlay?: boolean }) {
+export function RibbonBody(props: { tab: RibbonTabDef; overlay?: boolean; closing?: boolean }) {
   return (
     <div
-      className={`ow-ribbon${props.overlay ? ' overlay' : ''}`}
+      className={`ow-ribbon${props.overlay ? ' overlay' : ''}${props.closing ? ' closing' : ''}`}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {props.tab.groups.map((g) => (

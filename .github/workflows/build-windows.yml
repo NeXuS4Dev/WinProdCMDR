@@ -91,8 +91,8 @@ jobs:
           body: |
             Unsigned Windows binaries of WinProdCMDR, built automatically for testing.
 
-            - **WinProdCMDR-Setup-1.0.0.exe** — NSIS installer (shortcuts + uninstaller)
-            - **WinProdCMDR-1.0.0-portable.exe** — single-file portable build, no installation needed (self-extracts at launch)
+            - **WinProdCMDR-Setup-*.exe** — NSIS installer (shortcuts + uninstaller)
+            - **WinProdCMDR-*-portable.exe** — single-file portable build, no installation needed (self-extracts at launch)
             - **WinProdCMDR-win32-x64-unpacked.zip** — unpacked build (unzip, run WinProdCMDR.exe — fastest startup)
 
             The binaries are unsigned: Windows SmartScreen may warn — choose "More info → Run anyway".

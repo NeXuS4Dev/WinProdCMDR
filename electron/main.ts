@@ -123,14 +123,20 @@ function registerIpc() {
   });
 
   // Window chrome controls -------------------------------------------------
-  ipcMain.on('win.min', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
-  ipcMain.on('win.maxToggle', (e) => {
+  // NOTE: the preload uses ipcRenderer.invoke, so these MUST be handle()
+  // (an ipcMain.on() channel is invisible to invoke and the call rejects).
+  ipcMain.handle('win.min', (e) => {
+    BrowserWindow.fromWebContents(e.sender)?.minimize();
+  });
+  ipcMain.handle('win.maxToggle', (e) => {
     const w = BrowserWindow.fromWebContents(e.sender);
     if (!w) return;
     if (w.isMaximized()) w.unmaximize();
     else w.maximize();
   });
-  ipcMain.on('win.close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+  ipcMain.handle('win.close', (e) => {
+    BrowserWindow.fromWebContents(e.sender)?.close();
+  });
   ipcMain.handle('win.isMaximized', (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false);
 }
 

@@ -9,6 +9,7 @@ import { Checkbox, DefaultButton, PrimaryButton } from '@fluentui/react';
 import { APPS } from '../../../shared/apps';
 import type { SystemInfoModel } from '../../../shared/types';
 import { bridge, toolLabel } from '../../bridge';
+import { logActivity } from '../../activity';
 import { OfficeWindow } from '../../chrome/OfficeWindow';
 import type { RibbonTabDef } from '../../chrome/ribbonTypes';
 import { Bar, Busy, Card, KV, NoticeStack, useNotices, fmtGB, fmtUptime } from '../../components/Bits';
@@ -167,6 +168,7 @@ export function SysInfoApp() {
     try {
       await navigator.clipboard.writeText(buildSummary(info));
       push('success', 'Summary copied to the clipboard.', 3000);
+      logActivity('Copied system summary to the clipboard');
     } catch (err) {
       push('error', `Clipboard unavailable: ${String(err)}`);
     }
@@ -176,8 +178,10 @@ export function SysInfoApp() {
     if (!info) return;
     const fileName = `SystemReport-${new Date().toISOString().slice(0, 10)}.md`;
     const res = await bridge.exportReport(fileName, buildReport(info, sections));
-    if (res.ok && res.data?.path) push('success', `Report saved to ${res.data.path}`, 5000);
-    else if (res.ok) push('info', 'Export canceled.', 2500);
+    if (res.ok && res.data?.path) {
+      push('success', `Report saved to ${res.data.path}`, 5000);
+      logActivity(`Exported system report (${fileName})`);
+    } else if (res.ok) push('info', 'Export canceled.', 2500);
     else push('error', `Export failed: ${res.error}`);
   }, [info, sections, push]);
 
@@ -362,6 +366,38 @@ export function SysInfoApp() {
       qat={{
         save: { onClick: () => void exportReport(), tip: 'Export — save the full system report' },
         refresh: { onClick: () => void refresh(), tip: 'Refresh system facts' },
+      }}
+      onRefresh={() => void refresh()}
+      backstageExtras={{
+        refresh: () => void refresh(),
+        properties: info
+          ? [
+              { k: 'Edition', v: info.osName },
+              { k: 'Build', v: info.osBuild },
+              { k: 'Processor', v: info.cpuName, },
+              { k: 'Cores / Threads', v: `${info.cpuCores} / ${info.cpuThreads}` },
+              { k: 'Memory in use', v: `${fmtGB(info.memTotalGB - info.memFreeGB)} of ${fmtGB(info.memTotalGB)}` },
+              { k: 'Uptime', v: fmtUptime(info.uptimeSec) },
+              { k: 'Drives', v: info.drives.length },
+              { k: 'Mode', v: info.demo ? 'Demo data' : 'Live Windows data' },
+            ]
+          : [{ k: 'Reading', v: '…' }],
+        exportItems: [
+          {
+            key: 'md',
+            label: 'Export report (Markdown)',
+            desc: 'Saves the full report with the sections selected on the View tab.',
+            icon: 'ReportDocument',
+            onClick: () => void exportReport(),
+          },
+          {
+            key: 'copy',
+            label: 'Copy summary to clipboard',
+            desc: 'A compact plain-text overview of this machine.',
+            icon: 'Copy',
+            onClick: () => void copySummary(),
+          },
+        ],
       }}
       statusLeft={statusLeft}
       statusRight={<SbButton icon="Refresh" onClick={() => void refresh()} title="Refresh" />}

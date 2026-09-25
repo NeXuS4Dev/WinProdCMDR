@@ -5,6 +5,7 @@
 
 import * as React from 'react';
 import { Callout } from '@fluentui/react';
+import { usePrefs } from '../prefs';
 import type { Screentip } from './ribbonTypes';
 
 interface HoverState {
@@ -12,6 +13,8 @@ interface HoverState {
 }
 
 export function useScreentip(tip: Screentip | undefined, disabled?: boolean) {
+  const prefs = usePrefs();
+  const enabled = prefs.screentips;
   const [hover, setHover] = React.useState<HoverState | null>(null);
   const timer = React.useRef<number | undefined>(undefined);
 
@@ -23,16 +26,19 @@ export function useScreentip(tip: Screentip | undefined, disabled?: boolean) {
     setHover(null);
   }, []);
 
+  React.useEffect(() => {
+    if (!enabled) clear();
+  }, [enabled, clear]);
   React.useEffect(() => () => clear(), [clear]);
 
   const show = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      if (!tip || disabled) return;
+      if (!tip || disabled || !enabled) return;
       const el = e.currentTarget;
       clear();
       timer.current = window.setTimeout(() => setHover({ target: el }), 420);
     },
-    [tip, disabled, clear],
+    [tip, disabled, enabled, clear],
   );
 
   const handlers = React.useMemo(

@@ -8,9 +8,11 @@
  *   [ Content         ]  the app's working area
  *   [ Status bar      ]  app color strip
  *
- * Implements the three classic "Ribbon Display Options":
- *   Always Show the Ribbon / Show Tabs / Auto-hide the Ribbon,
- * including click-active-tab-to-toggle and double-click-to-pin behavior.
+ * Classic behaviors:
+ *   - Ribbon Display Options: Always show / Show tabs / Auto-hide
+ *   - click active tab toggles ribbon, double-click pins, hover opens when collapsed
+ *   - File opens the Backstage view (slides in like Office 2016)
+ *   - F5 refreshes, Esc closes overlays, double-click title maximizes
  */
 
 import * as React from 'react';
@@ -18,10 +20,11 @@ import { ContextualMenu, Icon } from '@fluentui/react';
 import type { AppMeta } from '../../shared/apps';
 import { bridge } from '../bridge';
 import { blend } from '../theme';
+import { usePrefs } from '../prefs';
 import type { RibbonTabDef } from './ribbonTypes';
 import { RibbonBody } from './Ribbon';
 import { TitleBar, type QatAction } from './TitleBar';
-import { Backstage } from './Backstage';
+import { Backstage, type BackstageExtras } from './Backstage';
 import { StatusBar } from './StatusBar';
 
 export type RibbonMode = 'expanded' | 'collapsed' | 'autohide';
@@ -36,6 +39,10 @@ export interface OfficeWindowProps {
     refresh?: { onClick: () => void; tip: string; disabled?: boolean };
     extra?: QatAction[];
   };
+  /** Backstage content contributed by the app (properties / exports / refresh). */
+  backstageExtras: BackstageExtras;
+  /** F5 handler. */
+  onRefresh?: () => void;
   ribbonMode?: RibbonMode;
   onRibbonModeChange?: (mode: RibbonMode) => void;
   statusLeft?: React.ReactNode;
@@ -43,17 +50,21 @@ export interface OfficeWindowProps {
   children: React.ReactNode;
 }
 
+type BackstageState = 'closed' | 'open' | 'closing';
+
 export function OfficeWindow(props: OfficeWindowProps) {
   const { meta } = props;
+  const prefs = usePrefs();
   const [activeTab, setActiveTab] = React.useState(() => props.tabs[0]?.key ?? '');
-  const [backstage, setBackstage] = React.useState(false);
+  const [backstage, setBackstage] = React.useState<BackstageState>('closed');
   const [mode, setMode] = React.useState<RibbonMode>(props.ribbonMode ?? 'expanded');
+  const [ribbonClosing, setRibbonClosing] = React.useState(false);
   const [overlay, setOverlay] = React.useState(false);
   const [dispMenuOpen, setDispMenuOpen] = React.useState(false);
   const [dispTarget, setDispTarget] = React.useState<HTMLElement | null>(null);
   const [windowActive, setWindowActive] = React.useState(true);
   const [maximized, setMaximized] = React.useState(false);
-  const bodyRef = React.useRef<HTMLDivElement>(null);
+  const closeTimer = React.useRef<number | undefined>(undefined);
 
   /* Window controls (Electron only) ------------------------------------ */
   React.useEffect(() => {
@@ -73,21 +84,44 @@ export function OfficeWindow(props: OfficeWindowProps) {
     };
   }, []);
 
-  const setModeBoth = (m: RibbonMode) => {
+  React.useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+  /* Ribbon mode transitions (with Office-style slide) ------------------- */
+  const commitMode = (m: RibbonMode) => {
     setMode(m);
     props.onRibbonModeChange?.(m);
     if (m === 'expanded') setOverlay(false);
+  };
+
+  const setRibbonMode = (m: RibbonMode) => {
+    if (m === mode) {
+      if (m !== 'expanded') setOverlay(false);
+      return;
+    }
+    if (mode === 'expanded' && m !== 'expanded') {
+      // animate the ribbon away, then collapse to tabs-only
+      if (ribbonClosing) return;
+      setOverlay(false);
+      setRibbonClosing(true);
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = window.setTimeout(() => {
+        setRibbonClosing(false);
+        commitMode(m);
+      }, 130);
+      return;
+    }
+    commitMode(m);
   };
 
   const currentTab = props.tabs.find((t) => t.key === activeTab) ?? props.tabs[0];
 
   const onTabClick = (key: string) => {
     if (key === 'file') {
-      setBackstage((b) => !b);
+      setBackstage((b) => (b === 'closed' ? 'open' : 'closed'));
       return;
     }
-    if (backstage) {
-      setBackstage(false);
+    if (backstage !== 'closed') {
+      setBackstage('closed');
       setActiveTab(key);
       return;
     }
@@ -96,20 +130,27 @@ export function OfficeWindow(props: OfficeWindowProps) {
       if (overlay) {
         setOverlay(false);
       } else if (mode === 'expanded') {
-        setModeBoth('collapsed');
+        setRibbonMode('collapsed');
       } else {
-        setModeBoth('expanded');
+        setRibbonMode('expanded');
       }
       return;
     }
     setActiveTab(key);
-    if (mode !== 'expanded') setOverlay(true);
+    if (mode !== 'expanded' && !ribbonClosing) setOverlay(true);
   };
 
   const onTabDoubleClick = (key: string) => {
     if (key === 'file') return;
-    setModeBoth(mode === 'expanded' ? 'collapsed' : 'expanded');
+    setRibbonMode(mode === 'expanded' ? 'collapsed' : 'expanded');
   };
+
+  /* Backstage close with slide-out -------------------------------------- */
+  const closeBackstage = React.useCallback(() => {
+    setBackstage((b) => (b === 'open' ? 'closing' : b));
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setBackstage('closed'), 150);
+  }, []);
 
   /* Gray out chrome when the window loses focus (inactive Office window) */
   const chromeColor = React.useMemo(() => {
@@ -117,7 +158,7 @@ export function OfficeWindow(props: OfficeWindowProps) {
     return blend(meta.palette.primary, '#8f8f8f');
   }, [meta.palette.primary, windowActive]);
 
-  const showBody = !backstage && (mode === 'expanded' || overlay);
+  const ribbonVisible = !ribbonClosing && (mode === 'expanded' || overlay);
 
   /* QAT ----------------------------------------------------------------- */
   const qatItems: QatAction[] = [];
@@ -146,28 +187,33 @@ export function OfficeWindow(props: OfficeWindowProps) {
 
   const qatMenu = [
     { key: 'home', text: 'Open App Browser', icon: 'Home', onClick: () => bridge.goHome() },
-    { key: 'about', text: `About ${meta.name}`, icon: 'Info', onClick: () => setBackstage(true) },
+    { key: 'about', text: `About ${meta.name}`, icon: 'Info', onClick: () => setBackstage('open') },
     { key: 'div', text: '', onClick: () => undefined, dividerBefore: true },
-    { key: 'exp', text: 'Always show the Ribbon', onClick: () => setModeBoth('expanded'), checked: mode === 'expanded' },
-    { key: 'tabs', text: 'Show Tabs', onClick: () => setModeBoth('collapsed'), checked: mode === 'collapsed' },
-    { key: 'auto', text: 'Auto-hide the Ribbon', onClick: () => setModeBoth('autohide'), checked: mode === 'autohide' },
+    { key: 'exp', text: 'Always show the Ribbon', onClick: () => setRibbonMode('expanded'), checked: mode === 'expanded' },
+    { key: 'tabs', text: 'Show Tabs', onClick: () => setRibbonMode('collapsed'), checked: mode === 'collapsed' },
+    { key: 'auto', text: 'Auto-hide the Ribbon', onClick: () => setRibbonMode('autohide'), checked: mode === 'autohide' },
   ];
 
-  /* Escape closes overlays ---------------------------------------------- */
+  /* Keyboard: Esc closes overlays, F5 refreshes ------------------------- */
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (overlay) setOverlay(false);
-        else if (backstage) setBackstage(false);
+        else if (backstage === 'open') closeBackstage();
+      } else if (e.key === 'F5') {
+        e.preventDefault();
+        props.onRefresh?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [overlay, backstage]);
+  }, [overlay, backstage, closeBackstage, props]);
+
+  const showBackstage = backstage !== 'closed';
 
   return (
     <div
-      className="ow"
+      className={`ow${prefs.animations ? '' : ' no-anim'}`}
       style={
         {
           '--ow-primary': chromeColor,
@@ -180,12 +226,13 @@ export function OfficeWindow(props: OfficeWindowProps) {
         title={meta.window.title}
         controls={bridge.window}
         maximized={maximized}
+        onDoubleClick={() => bridge.window?.toggleMaximize()}
         qat={{ items: qatItems, menu: qatMenu }}
       />
 
       <div className="ow-tabs">
         <button
-          className={`ow-tab${backstage ? ' active' : ''}`}
+          className={`ow-tab${showBackstage ? ' active' : ''}`}
           onClick={() => onTabClick('file')}
         >
           File
@@ -193,7 +240,7 @@ export function OfficeWindow(props: OfficeWindowProps) {
         {props.tabs.map((t) => (
           <button
             key={t.key}
-            className={`ow-tab${!backstage && t.key === activeTab ? ' active' : ''}`}
+            className={`ow-tab${!showBackstage && t.key === activeTab ? ' active' : ''}`}
             onClick={() => onTabClick(t.key)}
             onDoubleClick={() => onTabDoubleClick(t.key)}
           >
@@ -228,20 +275,25 @@ export function OfficeWindow(props: OfficeWindowProps) {
         </div>
       </div>
 
-      <div className="ow-body" ref={bodyRef}>
-        {backstage ? (
-          <Backstage meta={meta} onDone={() => setBackstage(false)} />
+      <div className="ow-body">
+        {showBackstage ? (
+          <Backstage
+            meta={meta}
+            extras={props.backstageExtras}
+            closing={backstage === 'closing'}
+            onDone={closeBackstage}
+          />
         ) : (
           <>
-            {mode !== 'expanded' && !overlay ? (
+            {mode !== 'expanded' && !overlay && !ribbonClosing ? (
               <div
                 className="ohotzone"
                 onMouseEnter={() => setOverlay(true)}
                 title="Show the ribbon"
               />
             ) : null}
-            {showBody && currentTab ? (
-              <RibbonBody tab={currentTab} overlay={overlay} />
+            {ribbonVisible && currentTab ? (
+              <RibbonBody tab={currentTab} overlay={overlay} closing={ribbonClosing} />
             ) : null}
             <div
               className="ow-content"
@@ -260,9 +312,9 @@ export function OfficeWindow(props: OfficeWindowProps) {
       {/* Ribbon display options (classic three-state menu) */}
       <ContextualMenu
         items={[
-          { key: 'exp', text: 'Always show the Ribbon', iconProps: { iconName: 'Pin' }, canCheck: true, checked: mode === 'expanded', onClick: () => setModeBoth('expanded') },
-          { key: 'tabs', text: 'Show Tabs', iconProps: { iconName: 'View' }, canCheck: true, checked: mode === 'collapsed', onClick: () => setModeBoth('collapsed') },
-          { key: 'auto', text: 'Auto-hide the Ribbon', iconProps: { iconName: 'ChevronUp' }, canCheck: true, checked: mode === 'autohide', onClick: () => setModeBoth('autohide') },
+          { key: 'exp', text: 'Always show the Ribbon', iconProps: { iconName: 'Pin' }, canCheck: true, checked: mode === 'expanded', onClick: () => setRibbonMode('expanded') },
+          { key: 'tabs', text: 'Show Tabs', iconProps: { iconName: 'View' }, canCheck: true, checked: mode === 'collapsed', onClick: () => setRibbonMode('collapsed') },
+          { key: 'auto', text: 'Auto-hide the Ribbon', iconProps: { iconName: 'ChevronUp' }, canCheck: true, checked: mode === 'autohide', onClick: () => setRibbonMode('autohide') },
         ]}
         hidden={!dispMenuOpen}
         target={dispTarget}
