@@ -1,0 +1,213 @@
+/* =====================================================================
+   WinProdCMDR — per-app content areas (lists, performance view, report)
+   ===================================================================== */
+
+/* ------------------------- lists (Tasks / Services) ------------------- */
+
+.list-host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.list-host .ms-DetailsList {
+  flex: 1;
+  overflow: auto;
+}
+.ms-DetailsList .ms-DetailsRow {
+  user-select: none;
+}
+.proc-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.proc-name-cell .glyph {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.proc-name-cell .sub {
+  color: #797775;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell-num {
+  font-variant-numeric: tabular-nums;
+}
+.cell-muted {
+  color: #605e5c;
+}
+.cell-danger {
+  color: #a4262c;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cell-danger .ms-Icon,
+.cell-danger i {
+  font-size: 11px;
+  color: #c50f1f;
+}
+.cell-ok {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #107c10;
+}
+.cell-ok .ms-Icon,
+.cell-ok i {
+  font-size: 11px;
+}
+
+/* ------------------------- Task Manager performance view ------------- */
+
+.perf-grid {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: auto;
+}
+.perf-charts {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.perf-chart-card {
+  border: 1px solid #e1dfdd;
+  background: #fff;
+  flex: 1;
+  min-width: 340px;
+  padding: 12px 14px 14px;
+}
+.perf-chart-card .head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.perf-chart-card .head .t {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ow-primary);
+}
+.perf-chart-card .head .v {
+  font-size: 20px;
+  font-weight: 300;
+  color: #333;
+  font-variant-numeric: tabular-nums;
+}
+.perf-chart-card .head .s {
+  font-size: 11px;
+  color: #797775;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.perf-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ------------------------- System Info report page ------------------- */
+
+.report {
+  padding: 22px 30px 40px;
+  max-width: 1120px;
+}
+.report-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e1dfdd;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+.report-head h1 {
+  font-size: 26px;
+  font-weight: 300;
+  color: #333;
+  margin: 0;
+}
+.report-head .meta {
+  font-size: 11.5px;
+  color: #797775;
+}
+.report-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px;
+}
+.report-sections .card {
+  min-width: 0;
+}
+.drive-row {
+  padding: 5px 0;
+}
+.drive-row .drive-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+  gap: 10px;
+}
+.drive-row .drive-top .lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drive-row .drive-top .vals {
+  color: #605e5c;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ip-chip {
+  display: inline-block;
+  border: 1px solid #e1dfdd;
+  background: #faf9f8;
+  color: #4a4846;
+  font-size: 11px;
+  padding: 1px 7px;
+  margin: 2px 4px 2px 0;
+  font-family: Consolas, monospace;
+}
+.gpu-line {
+  font-size: 12px;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.gpu-line .ms-Icon,
+.gpu-line i {
+  font-size: 13px;
+  color: var(--ow-primary);
+  display: flex;
+}
+
+/* Services details pane (bottom summary) */
+.svc-footer {
+  flex: none;
+  border-top: 1px solid #e1dfdd;
+  background: #faf9f8;
+  padding: 9px 14px;
+  font-size: 11.5px;
+  color: #605e5c;
+  line-height: 1.5;
+}
+.svc-footer b {
+  color: #333;
+}

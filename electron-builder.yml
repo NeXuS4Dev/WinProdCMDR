@@ -1,0 +1,30 @@
+appId: dev.winprodcmdr.suite
+productName: WinProdCMDR
+copyright: BSD-3-Clause — WinProdCMDR contributors
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: WinProdCMDR-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: WinProdCMDR
+
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

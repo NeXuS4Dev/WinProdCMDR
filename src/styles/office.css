@@ -1,0 +1,1180 @@
+/* =====================================================================
+   WinProdCMDR — classic Office 2016 chrome
+   (title bar + QAT, ribbon tab strip, ribbon body, status bar, backstage)
+
+   The suite palette is injected as CSS variables on .ow per window:
+     --ow-primary  e.g. #2b579a (Word blue), #217346 (Excel green), #d24726 (PPT orange)
+     --ow-dark     darker shade
+     --ow-darker   darkest shade
+   ===================================================================== */
+
+.ow {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #fff;
+  font-size: 12px;
+  color: #333;
+  user-select: none;
+  --ow-primary: #2b579a;
+  --ow-dark: #234a85;
+  --ow-darker: #1c3a67;
+}
+
+.ow-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* --------------------------------------------------------------------
+   Title bar — app color fill, centered document title,
+   Quick Access Toolbar on the left, window controls on the right.
+   -------------------------------------------------------------------- */
+
+.ow-tb {
+  height: 32px;
+  background: var(--ow-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex: none;
+}
+.ow-tb.drag {
+  -webkit-app-region: drag;
+}
+.ow-tb.drag button,
+.ow-tb.drag input {
+  -webkit-app-region: no-drag;
+}
+
+.ow-tb-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 340px;
+  pointer-events: none;
+}
+
+.ow-qat {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 5px;
+  z-index: 2;
+}
+
+.qat-btn {
+  width: 26px;
+  height: 24px;
+  margin: 0 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  padding: 0;
+}
+.qat-btn .ms-Icon,
+.qat-btn i,
+.qat-btn span[data-icon-name] {
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+}
+.qat-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+.qat-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.26);
+}
+.qat-btn:disabled {
+  opacity: 0.42;
+}
+.qat-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.35);
+  margin: 0 4px;
+  flex: none;
+}
+
+.ow-wc {
+  margin-left: auto;
+  display: flex;
+  height: 100%;
+  z-index: 2;
+}
+.wc-btn {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  padding: 0;
+}
+.wc-btn .ms-Icon,
+.wc-btn i {
+  font-size: 10px;
+}
+.wc-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.wc-btn:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+.wc-btn.wc-close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------
+   Ribbon tab strip
+   -------------------------------------------------------------------- */
+
+.ow-tabs {
+  height: 30px;
+  background: var(--ow-primary);
+  display: flex;
+  align-items: stretch;
+  flex: none;
+  position: relative;
+  z-index: 3;
+}
+.ow-tab {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 15px;
+  position: relative;
+  white-space: nowrap;
+}
+.ow-tab:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+.ow-tab.active {
+  background: #fff;
+  color: #333;
+}
+
+.ow-tabs-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 10px;
+}
+
+/* "Tell me"-style search box, living in the tab strip like modern Office */
+.tellme {
+  position: relative;
+  width: 170px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+}
+.tellme:focus-within {
+  background: #fff;
+}
+.tellme .tellme-ic {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-left: 6px;
+  flex: none;
+  display: flex;
+}
+.tellme:focus-within .tellme-ic {
+  color: #666;
+}
+.tellme input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 6px 0 4px;
+}
+.tellme input::placeholder {
+  color: rgba(255, 255, 255, 0.85);
+}
+.tellme:focus-within input {
+  color: #333;
+}
+
+.rbdisp {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: #fff;
+  padding: 0;
+}
+.rbdisp .ms-Icon,
+.rbdisp i {
+  font-size: 9px;
+  display: flex;
+}
+.rbdisp:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.rbdisp:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* --------------------------------------------------------------------
+   Ribbon body — white strip with groups, dividers and captions
+   -------------------------------------------------------------------- */
+
+.ow-ribbon {
+  height: 96px;
+  background: #fff;
+  border-bottom: 1px solid #d6d6d6;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: none;
+  scrollbar-width: none;
+}
+.ow-ribbon::-webkit-scrollbar {
+  display: none;
+}
+.ow-ribbon.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+  border-bottom: 1px solid #c8c8c8;
+}
+/* --------------------------------------------------------------------
+   Office 2016 ribbon motion.
+
+   Pinned ribbon: the WRAPPER animates its height 96px <-> 0 so the
+   content below is pushed/pulled smoothly - the way Office collapses
+   the ribbon. The inner strip adds a fade/slide for the last pixels.
+
+   Overlay ribbon (collapsed "Show Tabs" / auto-hide): drops from under
+   the tab strip over the content and slides back up when dismissed.
+   -------------------------------------------------------------------- */
+.ow-ribbonwrap {
+  flex: none;
+  height: 96px;
+  overflow: hidden;
+}
+.ow-ribbonwrap.opening {
+  animation: ow-wrap-open 170ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.ow-ribbonwrap.closing {
+  animation: ow-wrap-close 140ms ease-in forwards;
+  pointer-events: none;
+}
+.ow-ribbonwrap.closing .ow-ribbon {
+  animation: ow-rib-out 140ms ease-in forwards;
+}
+@keyframes ow-wrap-open {
+  from { height: 0; }
+  to { height: 96px; }
+}
+@keyframes ow-wrap-close {
+  from { height: 96px; }
+  to { height: 0; }
+}
+@keyframes ow-rib-out {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-10px); opacity: 0; }
+}
+.ow-ribbon.overlay {
+  animation: ow-rib-drop 140ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.ow-ribbon.overlay.closing {
+  animation: ow-rib-overlay-up 130ms ease-in forwards;
+  pointer-events: none;
+}
+@keyframes ow-rib-drop {
+  from { transform: translateY(-96px); }
+  to { transform: translateY(0); }
+}
+@keyframes ow-rib-overlay-up {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-96px); opacity: 0.4; }
+}
+
+/* Auto-hide mode: the tab strip collapses with the ribbon and is
+   revealed together with it when the mouse hits the top of the window. */
+.mode-autohide .ow-tabs {
+  height: 0;
+  overflow: hidden;
+}
+.mode-autohide .ow-tabs.revealed {
+  height: 30px;
+  animation: ow-tabs-in 150ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+@keyframes ow-tabs-in {
+  from { height: 0; }
+  to { height: 30px; }
+}
+.mode-autohide .ohotzone {
+  height: 8px;
+}
+
+.ow-rgroup {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 9px 0;
+  flex: none;
+  min-width: 0;
+}
+.ow-rgroup + .ow-rgroup {
+  border-left: 1px solid #e4e4e4;
+}
+.rb-cols {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  align-items: flex-start;
+}
+.rb-label {
+  height: 19px;
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex: none;
+}
+.rb-dlg {
+  position: absolute;
+  right: -3px;
+  bottom: 2px;
+  width: 18px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #7a7a7a;
+  padding: 0;
+}
+.rb-dlg .ms-Icon,
+.rb-dlg i {
+  font-size: 8px;
+  display: flex;
+}
+.rb-dlg:hover {
+  background: #dcdcdc;
+  border-color: #c3c3c3;
+}
+
+/* Ribbon buttons ------------------------------------------------------ */
+
+.rbbtn {
+  font-family: inherit;
+  font-size: 12px;
+  color: #333;
+  background: transparent;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+.rbbtn:disabled {
+  color: #a6a6a6;
+}
+.rbbtn:disabled .ms-Icon,
+.rbbtn:disabled i {
+  color: #b6b6b6;
+}
+button.rbbtn:not(:disabled):hover {
+  background: #e6e6e6;
+  border-color: #d0d0d0;
+}
+button.rbbtn:not(:disabled):active {
+  background: #cfcfcf;
+  border-color: #bdbdbd;
+}
+
+.rbbtn-lg {
+  width: 58px;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-top: 4px;
+  gap: 1px;
+}
+.rbbtn-lg .ic {
+  font-size: 30px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+.rbbtn-lg .lb {
+  line-height: 13px;
+  max-height: 27px;
+  overflow: hidden;
+  text-align: center;
+  padding: 0 3px 2px;
+}
+.rb-lgcol {
+  display: flex;
+}
+
+.rb-smcol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+
+.rbbtn-sm {
+  height: 22px;
+  gap: 6px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.rbbtn-sm .ic {
+  font-size: 16px;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.rbbtn-sm .lb {
+  display: flex;
+  align-items: center;
+}
+.rbbtn-sm .lb .ms-Icon,
+.rbbtn-sm .lb i {
+  font-size: 8px;
+  color: #555;
+  margin-left: 5px;
+}
+.rbbtn-sm.split .lb {
+  flex: 1;
+}
+.rbbtn-sm.checked {
+  background: #cde3f3;
+  border-color: #b7d2e6;
+}
+.rbbtn-sm.checked:hover {
+  background: #c3dcee;
+}
+
+.rb-lg-split {
+  width: 58px;
+  flex-direction: column;
+  padding: 0;
+}
+.rb-lg-split .top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+  gap: 1px;
+}
+.rb-lg-split .top .ic {
+  font-size: 30px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+.rb-lg-split .top .lb {
+  line-height: 13px;
+  max-height: 13px;
+  overflow: hidden;
+  text-align: center;
+  padding: 0 3px;
+  white-space: nowrap;
+}
+.rb-lg-split .strip {
+  height: 14px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+}
+.rb-lg-split .strip .ms-Icon,
+.rb-lg-split .strip i {
+  font-size: 8px;
+  color: #555;
+}
+button.rb-lg-split:not(:disabled):hover .strip {
+  border-top-color: #d0d0d0;
+}
+
+.rb-select {
+  height: 22px;
+  border: 1px solid #9a9a9a;
+  background: #fff;
+  font-size: 12px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+}
+.rb-select .lb {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.rb-select .ms-Icon,
+.rb-select i {
+  font-size: 8px;
+  color: #555;
+}
+button.rb-select:not(:disabled):hover {
+  border-color: #6d6d6d;
+}
+
+.rb-check {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: #333;
+  background: transparent;
+  border: 1px solid transparent;
+}
+.rb-check:not(.disabled):hover {
+  background: #e6e6e6;
+  border-color: #d0d0d0;
+}
+.rb-check.disabled {
+  color: #a6a6a6;
+}
+.rb-check .box {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #666;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.rb-check.disabled .box {
+  border-color: #b1b1b1;
+  background: #fafafa;
+}
+.rb-check .box .ms-Icon,
+.rb-check .box i {
+  font-size: 10px;
+  color: #333;
+}
+
+/* Screentips (Office-style hover help) -------------------------------- */
+
+.screentip {
+  background: #fff;
+  border: 1px solid #c6c6c6;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.24);
+  padding: 9px 13px;
+  max-width: 300px;
+  font-family: inherit;
+  animation: ow-tip-in 110ms ease-out;
+}
+@keyframes ow-tip-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.screentip .t {
+  font-size: 12px;
+  color: #21201c;
+  white-space: pre-wrap;
+}
+.screentip .b {
+  font-size: 11.5px;
+  color: #605e5c;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+/* --------------------------------------------------------------------
+   Status bar
+   -------------------------------------------------------------------- */
+
+.ow-sb {
+  height: 24px;
+  background: var(--ow-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 0 8px;
+  flex: none;
+  gap: 12px;
+  z-index: 4;
+}
+.ow-sb .sb-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ow-sb .sb-sep {
+  width: 1px;
+  height: 13px;
+  background: rgba(255, 255, 255, 0.35);
+  flex: none;
+}
+.ow-sb .sb-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sb-btn {
+  height: 20px;
+  padding: 0 6px;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.sb-btn .ms-Icon,
+.sb-btn i {
+  font-size: 12px;
+  display: flex;
+}
+.sb-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* --------------------------------------------------------------------
+   Backstage (File tab)
+   -------------------------------------------------------------------- */
+
+.ow-backstage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  background: #fff;
+  z-index: 8;
+  animation: ow-bs-in 190ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.ow-backstage.closing {
+  animation: ow-bs-out 150ms ease-in forwards;
+  pointer-events: none;
+}
+@keyframes ow-bs-in {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+@keyframes ow-bs-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+.bs-nav {
+  animation: ow-bs-nav-in 200ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+@keyframes ow-bs-nav-in {
+  from { transform: translateX(-38px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.bs-content {
+  animation: ow-bs-content-in 200ms cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+@keyframes ow-bs-content-in {
+  from { transform: translateX(22px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+/* page switch slide (bs-content is keyed by page) */
+.bs-h3 {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ow-primary);
+  margin: 0 0 8px;
+}
+.bs-info {
+  display: flex;
+  gap: 34px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.bs-col-actions {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  flex: none;
+}
+.bs-bigbtn {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 10px 10px 11px;
+  font-family: inherit;
+  color: #333;
+}
+.bs-bigbtn:hover:not(:disabled) {
+  background: #f3f9fd;
+  outline: 1px solid #c7e0f4;
+}
+.bs-bigbtn:disabled {
+  color: #a6a6a6;
+}
+.bs-bigbtn.active {
+  background: #f3f9fd;
+  outline: 1px solid #c7e0f4;
+}
+.bs-bigbtn-ic {
+  font-size: 22px;
+  color: var(--ow-primary);
+  display: flex;
+  position: relative;
+  margin-top: 1px;
+}
+.bs-bigbtn-ic i, .bs-bigbtn-ic span[data-icon-name] {
+  font-size: 22px;
+  display: flex;
+}
+.bs-lockdot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #107c10;
+  border: 2px solid #fff;
+}
+.bs-bigbtn-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bs-bigbtn-tx .t {
+  font-size: 12.5px;
+}
+.bs-bigbtn-tx .d {
+  font-size: 11px;
+  color: #605e5c;
+  line-height: 1.4;
+}
+.bs-col-props {
+  flex: 1;
+  min-width: 230px;
+  max-width: 360px;
+}
+.bs-props {
+  border: 1px solid #e1dfdd;
+  padding: 10px 14px 12px;
+}
+.bs-note {
+  font-size: 11px;
+  color: #797775;
+  margin-top: 8px;
+}
+.bs-col-recent {
+  flex: 1;
+  min-width: 250px;
+  max-width: 420px;
+}
+.bs-recent-day {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #605e5c;
+  margin: 0 0 6px;
+}
+.bs-recent-list {
+  display: flex;
+  flex-direction: column;
+}
+.bs-recent-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid #f3f2f1;
+}
+.bs-recent-row:hover {
+  background: #faf9f8;
+}
+.bs-recent-time {
+  color: #797775;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  font-size: 11px;
+}
+.bs-recent-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-approw-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.bs-approw-sub {
+  color: #797775;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-approw .bs-current {
+  color: #797775;
+  font-size: 11px;
+}
+.bs-exportrow {
+  padding: 10px 12px;
+}
+.bs-account-grid {
+  border: 1px solid #e1dfdd;
+  padding: 10px 14px 12px;
+  max-width: 460px;
+}
+.bs-nav {
+  width: 210px;
+  background: var(--ow-primary);
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  padding-top: 2px;
+}
+.bs-item {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 13px;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  white-space: nowrap;
+}
+.bs-item .ms-Icon,
+.bs-item i {
+  font-size: 15px;
+  display: flex;
+}
+.bs-item:hover {
+  background: rgba(0, 0, 0, 0.14);
+}
+.bs-item.active {
+  background: var(--ow-darker);
+  box-shadow: inset 4px 0 0 #fff;
+}
+.bs-spacer {
+  flex: 1;
+}
+.bs-content {
+  flex: 1;
+  overflow: auto;
+  padding: 30px 44px;
+}
+.bs-h1 {
+  font-size: 28px;
+  font-weight: 300;
+  color: #333;
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bs-h1 .bs-appicon {
+  width: 40px;
+  height: 40px;
+  background: var(--ow-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bs-h1 .bs-appicon .ms-Icon,
+.bs-h1 .bs-appicon i {
+  font-size: 24px;
+}
+.bs-sub {
+  font-size: 12.5px;
+  color: #605e5c;
+  margin: 0 0 20px;
+}
+.bs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  padding: 2px 9px;
+  vertical-align: middle;
+  font-weight: 400;
+}
+.bs-badge.live {
+  color: #107c10;
+  border: 1px solid #107c10;
+}
+.bs-badge.demo {
+  color: #797673;
+  border: 1px solid #b8b6b4;
+}
+.bs-block {
+  margin-top: 26px;
+}
+.bs-block h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ow-primary);
+  margin: 0 0 8px;
+}
+.bs-applist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 480px;
+}
+.bs-approw {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e1dfdd;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #333;
+}
+.bs-approw .dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+}
+.bs-approw .dot .ms-Icon,
+.bs-approw .dot i {
+  font-size: 9px;
+}
+.bs-approw.current {
+  border-color: var(--ow-primary);
+}
+.bs-approw button {
+  margin-left: auto;
+}
+
+/* --------------------------------------------------------------------
+   Content area & shared bits
+   -------------------------------------------------------------------- */
+
+.ow-content {
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+  position: relative;
+  user-select: text;
+}
+
+.ohotzone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  z-index: 6;
+}
+
+/* Office-style slim progress bar */
+.pbar {
+  height: 6px;
+  background: #eaeaea;
+  position: relative;
+  min-width: 90px;
+}
+.pbar .fill {
+  height: 100%;
+  background: var(--ow-primary);
+  transition: width 350ms ease;
+}
+.pbar .fill.warn {
+  background: #c19c00;
+}
+.pbar .fill.crit {
+  background: #c42b1c;
+}
+
+/* Cards used by System Info / performance views */
+.card {
+  border: 1px solid #e1dfdd;
+  background: #fff;
+  padding: 13px 16px 14px;
+  min-width: 250px;
+  flex: 1;
+}
+.card h4 {
+  font-size: 12.5px;
+  color: var(--ow-primary);
+  font-weight: 600;
+  margin: 0 0 9px;
+  letter-spacing: 0.2px;
+}
+.kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 12px;
+  color: #333;
+  padding: 2.5px 0;
+}
+.kv .k {
+  color: #605e5c;
+  flex: none;
+}
+.kv .v {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Notices */
+.notice-stack {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+.notice-stack > * {
+  pointer-events: auto;
+  animation: ow-notice-in 180ms ease-out;
+}
+@keyframes ow-notice-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Busy overlay */
+.busy {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  z-index: 15;
+  user-select: none;
+}
+.busy .busy-label {
+  font-size: 12.5px;
+  color: #605e5c;
+}
+
+/* Office-styled dialog tweaks */
+.ow-dialog .ms-Dialog-main {
+  min-width: 440px;
+  max-width: 560px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e1dfdd;
+}
+.ow-dialog .ms-Dialog-title {
+  background: var(--ow-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 400;
+  padding: 9px 14px 10px;
+  margin: 0;
+}
+.ow-dialog .ms-Dialog-topButton {
+  color: #fff;
+  top: 8px;
+  right: 8px;
+}
+.ow-dialog .ms-Dialog-topButton:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.ow-dialog .ms-Dialog-inner {
+  padding: 16px 20px 8px;
+}
+.ow-dialog .ms-Dialog-actions {
+  padding: 14px 20px 16px;
+}
+.ow-dialog .hint {
+  font-size: 11.5px;
+  color: #605e5c;
+  margin: 2px 0 10px;
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------
+   Motion preferences
+   -------------------------------------------------------------------- */
+
+.ow.no-anim *,
+.ss.no-anim *,
+.ow.no-anim *::before,
+.ow.no-anim *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ow *,
+  .ss *,
+  .ow *::before,
+  .ow *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
