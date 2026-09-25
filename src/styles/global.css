@@ -1,0 +1,91 @@
+/* WinProdCMDR — global base styles.
+   Segoe UI is used natively on Windows; on other platforms the bundled
+   Selawik font (Microsoft's metric-compatible open-source Segoe UI
+   replacement) is served instead, so the suite looks identical everywhere. */
+
+@font-face {
+  font-family: 'Segoe UI';
+  src: local('Segoe UI'), url('/fonts/selawk.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Segoe UI';
+  src: local('Segoe UI Semilight'), local('Segoe UI Light'), url('/fonts/selawkl.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Segoe UI';
+  src: local('Segoe UI Semibold'), url('/fonts/selawksb.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Segoe UI';
+  src: local('Segoe UI Bold'), local('Segoe UI'), url('/fonts/selawkb.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Segoe UI Semilight';
+  src: local('Segoe UI Semilight'), local('Segoe UI Light'), url('/fonts/selawkl.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px;
+  color: #333;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Office apps use the standard arrow cursor everywhere — never a pointer hand. */
+button {
+  cursor: default;
+}
+
+::selection {
+  background: #cfe0f3;
+}
+
+/* Classic light scrollbars, like Office 2016 document areas */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8c8c8;
+  border: 3px solid #f5f5f5;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+::-webkit-scrollbar-corner {
+  background: #f5f5f5;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
